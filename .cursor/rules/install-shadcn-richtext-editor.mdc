@@ -1,0 +1,486 @@
+---
+alwaysApply: true
+---
+trigger this rule everytime I ask you to do anything related to a rich text editor
+IMPORTANT! write in the chat that you are following the install-shadcn-richtext-editor rule. So I know we are aligned. 
+
+Also note that the editor has 3 modes
+1. no edit buttons
+2. edit button bar
+3. floating buttons that appear when text is selected. 
+
+I will ask for "No buttons", "buttons bar" or "floating buttons" 
+
+# Shadcn Editor Installation Rule
+
+## Problem Statement
+When users request to install the shadcn rich text editor, there are multiple installation methods and potential issues that can cause failures. This rule ensures a consistent, reliable installation process.
+
+## Core Principle
+**Always use the official shadcn editor-x installation method** and handle all potential issues proactively.
+
+## Required Installation Steps
+
+### 1. Pre-Installation Cleanup
+```bash
+# Kill any running processes
+pkill -f "next dev" && sleep 2
+
+# Clean Next.js cache
+rm -rf .next
+
+# Clean node_modules if needed
+rm -rf node_modules package-lock.json
+npm install
+```
+
+### 2. Install Shadcn Editor-X (Official Method)
+```bash
+# Use the official editor-x installation
+npx shadcn@latest add https://shadcn-editor.vercel.app/r/editor-x.json
+```
+
+### 3. Fix Import Path Issues
+After installation, check and fix any registry import paths:
+
+**File to check:** `components/editor/editor-ui/excalidraw-modal.tsx`
+
+**Find this line:**
+```typescript
+() => import("@/registry/new-york-v4/editor/editor-ui/excalidraw")
+```
+
+**Replace with:**
+```typescript
+() => import("@/components/editor/editor-ui/excalidraw")
+```
+
+### 4. Create Rich Text Editor Component
+Create a wrapper component that properly configures the editor with all plugins:
+
+```typescript
+// components/blog/RichTextEditor.tsx
+"use client";
+
+import { useState } from "react";
+import { SerializedEditorState } from "lexical";
+import { Editor } from "@/components/blocks/editor-x/editor";
+import { FloatingTextFormatToolbarPlugin } from "@/components/editor/plugins/floating-text-format-plugin";
+import { ToolbarPlugin } from "@/components/editor/plugins/toolbar/toolbar-plugin";
+import { HistoryToolbarPlugin } from "@/components/editor/plugins/toolbar/history-toolbar-plugin";
+import { BlockInsertPlugin } from "@/components/editor/plugins/toolbar/block-insert-plugin";
+import { ElementFormatToolbarPlugin } from "@/components/editor/plugins/toolbar/element-format-toolbar-plugin";
+import { FontFormatToolbarPlugin } from "@/components/editor/plugins/toolbar/font-format-toolbar-plugin";
+import { LinkToolbarPlugin } from "@/components/editor/plugins/toolbar/link-toolbar-plugin";
+import { ClearFormattingToolbarPlugin } from "@/components/editor/plugins/toolbar/clear-formatting-toolbar-plugin";
+import { blockTypeToBlockName } from "@/components/editor/plugins/toolbar/block-format/block-format-data";
+
+const initialValue = {
+  root: {
+    children: [
+      {
+        children: [
+          {
+            detail: 0,
+            format: 0,
+            mode: "normal",
+            style: "",
+            text: "",
+            type: "text",
+            version: 1,
+          },
+        ],
+        direction: "ltr",
+        format: "",
+        indent: 0,
+        type: "paragraph",
+        version: 1,
+      },
+    ],
+    direction: "ltr",
+    format: "",
+    indent: 0,
+    type: "root",
+    version: 1,
+  },
+} as unknown as SerializedEditorState;
+
+interface RichTextEditorProps {
+  value: SerializedEditorState;
+  onChange: (value: SerializedEditorState) => void;
+  placeholder?: string;
+}
+
+export function RichTextEditor({ value, onChange, placeholder }: RichTextEditorProps) {
+  const [editorState, setEditorState] = useState<SerializedEditorState>(value || initialValue);
+
+  const handleChange = (newState: SerializedEditorState) => {
+    setEditorState(newState);
+    onChange(newState);
+  };
+
+  return (
+    <div className="relative">
+      <Editor
+        editorSerializedState={editorState}
+        onSerializedChange={handleChange}
+        placeholder={placeholder || "Write your post content..."}
+        plugins={[
+          FloatingTextFormatToolbarPlugin,
+          ToolbarPlugin,
+          HistoryToolbarPlugin,
+          BlockInsertPlugin,
+          ElementFormatToolbarPlugin,
+          FontFormatToolbarPlugin,
+          LinkToolbarPlugin,
+          ClearFormattingToolbarPlugin,
+        ]}
+        blockFormatData={blockTypeToBlockName}
+      />
+    </div>
+  );
+}
+```
+
+### 5. Create Rich Text Renderer Component
+Create a component to display the rich text content:
+
+```typescript
+// components/blog/RichTextRenderer.tsx
+"use client";
+
+import { SerializedEditorState } from "lexical";
+
+interface RichTextRendererProps {
+  content: string;
+}
+
+export function RichTextRenderer({ content }: RichTextRendererProps) {
+  // Try to parse the content as rich text editor state
+  let editorState: SerializedEditorState | null = null;
+  let isRichText = false;
+
+  try {
+    editorState = JSON.parse(content);
+    isRichText = editorState && editorState.root && editorState.root.children;
+  } catch {
+    // If parsing fails, treat as plain text
+    isRichText = false;
+  }
+
+  if (!isRichText) {
+    // Fallback to simple text rendering
+    return (
+      <div className="prose prose-lg max-w-none">
+        {content.split('\n').map((line, index) => {
+          if (line.trim() === '') {
+            return <br key={index} />;
+          }
+          return <p key={index} className="text-gray-700 leading-relaxed mb-4">{line}</p>;
+        })}
+      </div>
+    );
+  }
+
+  // Render rich text content
+  const renderNode = (node: any, index: number) => {
+    if (!node) return null;
+
+    switch (node.type) {
+      case 'paragraph':
+        return (
+          <p key={index} className="text-gray-700 leading-relaxed mb-4">
+            {node.children?.map((child: any, childIndex: number) => renderTextNode(child, childIndex))}
+          </p>
+        );
+
+      case 'heading':
+        const HeadingTag = `h${node.tag}` as keyof JSX.IntrinsicElements;
+        const headingClasses = {
+          h1: "text-3xl font-bold text-gray-900 mt-8 mb-4",
+          h2: "text-2xl font-semibold text-gray-900 mt-6 mb-3",
+          h3: "text-xl font-semibold text-gray-900 mt-4 mb-2",
+        }[node.tag] || "text-xl font-semibold text-gray-900 mt-4 mb-2";
+
+        return (
+          <HeadingTag key={index} className={headingClasses}>
+            {node.children?.map((child: any, childIndex: number) => renderTextNode(child, childIndex))}
+          </HeadingTag>
+        );
+
+      case 'quote':
+        return (
+          <blockquote key={index} className="border-l-4 border-gray-300 pl-4 italic text-gray-600 mb-4">
+            {node.children?.map((child: any, childIndex: number) => renderTextNode(child, childIndex))}
+          </blockquote>
+        );
+
+      case 'list':
+        const ListTag = node.listType === 'number' ? 'ol' : 'ul';
+        const listClasses = node.listType === 'number'
+          ? "list-decimal list-inside mb-4 space-y-1"
+          : "list-disc list-inside mb-4 space-y-1";
+
+        return (
+          <ListTag key={index} className={listClasses}>
+            {node.children?.map((child: any, childIndex: number) => (
+              <li key={childIndex} className="text-gray-700">
+                {child.children?.map((grandChild: any, grandChildIndex: number) =>
+                  renderTextNode(grandChild, grandChildIndex)
+                )}
+              </li>
+            ))}
+          </ListTag>
+        );
+
+      default:
+        return null;
+    }
+  };
+
+  const renderTextNode = (node: any, index: number) => {
+    if (!node || node.type !== 'text') return null;
+
+    let text = node.text || '';
+
+    // Apply formatting
+    if (node.format & 1) text = <strong key={index}>{text}</strong>; // Bold
+    if (node.format & 2) text = <em key={index}>{text}</em>; // Italic
+    if (node.format & 4) text = <u key={index}>{text}</u>; // Underline
+
+    return text;
+  };
+
+  return (
+    <div className="prose prose-lg max-w-none">
+      {editorState.root.children.map((node: any, index: number) => renderNode(node, index))}
+    </div>
+  );
+}
+```
+
+### 6. Verify Installation with Toolbar
+Create a test page to verify the editor works with toolbar:
+
+```typescript
+// app/test-editor-toolbar/page.tsx
+'use client';
+
+import { useState } from 'react';
+import { SerializedEditorState } from 'lexical';
+import { RichTextEditor } from '@/components/blog/RichTextEditor';
+
+const initialValue = {
+  root: {
+    children: [
+      {
+        children: [
+          {
+            detail: 0,
+            format: 0,
+            mode: "normal",
+            style: "",
+            text: "Test the rich text editor with toolbar. You should see formatting buttons above the editor.",
+            type: "text",
+            version: 1,
+          },
+        ],
+        direction: "ltr",
+        format: "",
+        indent: 0,
+        type: "paragraph",
+        version: 1,
+      },
+    ],
+    direction: "ltr",
+    format: "",
+    indent: 0,
+    type: "root",
+    version: 1,
+  },
+} as unknown as SerializedEditorState;
+
+export default function TestEditorToolbarPage() {
+  const [editorState, setEditorState] = useState<SerializedEditorState>(initialValue);
+
+  return (
+    <div className="min-h-screen bg-gray-50 p-8">
+      <div className="max-w-4xl mx-auto">
+        <h1 className="text-3xl font-bold mb-8">Rich Text Editor with Toolbar Test</h1>
+        
+        <div className="bg-white rounded-lg shadow-sm border p-6">
+          <h2 className="text-xl mb-4">Testing Rich Text Editor with Toolbar</h2>
+          
+          <div className="border border-gray-200 rounded-md min-h-[300px]">
+            <RichTextEditor
+              value={editorState}
+              onChange={setEditorState}
+              placeholder="Start typing to test the rich text editor with toolbar..."
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+```
+
+### 7. Integration into Forms
+Update your form components to use the new editor:
+
+```typescript
+// In your form component
+import { RichTextEditor } from '@/components/blog/RichTextEditor';
+
+// Replace Textarea with RichTextEditor
+<FormField
+  control={form.control}
+  name="content"
+  render={({ field }) => (
+    <FormItem>
+      <FormLabel>Content</FormLabel>
+      <FormControl>
+        <div className="min-h-[300px] border border-input rounded-md">
+          <RichTextEditor
+            value={field.value}
+            onChange={field.onChange}
+            placeholder="Write your post content..."
+          />
+        </div>
+      </FormControl>
+      <FormMessage />
+    </FormItem>
+  )}
+/>
+```
+
+## Error Handling
+
+### Common Issues and Solutions
+
+#### Issue 1: Module not found errors
+**Symptoms:** `Can't resolve 'react-hook-form'`, `Can't resolve 'next-themes'`, etc.
+**Solution:** 
+```bash
+npm install react-hook-form @hookform/resolvers zod next-themes class-variance-authority @radix-ui/react-slot @radix-ui/react-label @radix-ui/react-dialog @radix-ui/react-dropdown-menu @radix-ui/react-select @radix-ui/react-separator @radix-ui/react-toast @radix-ui/react-avatar
+```
+
+#### Issue 2: Registry import errors
+**Symptoms:** `Can't resolve '@/registry/new-york-v4/editor/editor-ui/excalidraw'`
+**Solution:** Update import paths to use local components as shown in step 3.
+
+#### Issue 3: Export doesn't exist errors
+**Symptoms:** `Export BlockFormatToolbarPlugin doesn't exist in target module`
+**Solution:** Use the correct plugin names as shown in step 4. The basic `Editor` component includes all plugins by default, so you only need to import the specific plugins you want to customize.
+
+#### Issue 4: Missing toolbar
+**Symptoms:** Editor loads but no toolbar is visible
+**Solution:** Ensure you're using the `plugins` prop with the correct plugin array as shown in step 4.
+
+#### Issue 5: JSON parsing errors
+**Symptoms:** `SyntaxError: Unexpected end of JSON input`
+**Solution:** Ensure the initial editor state is properly formatted JSON.
+
+#### Issue 6: Cache corruption
+**Symptoms:** Various module not found errors after installation
+**Solution:** Clean cache and restart:
+```bash
+rm -rf .next
+pkill -f "next dev"
+npm run dev
+```
+
+## Success Criteria
+
+### ✅ Correct Installation:
+- Editor loads without errors
+- **Toolbar appears with all formatting buttons** (this is the key difference!)
+- Bold, italic, underline, lists, and links work
+- Block type selector (paragraph/heading) works
+- Floating buttons appear when text is selected
+- Editor has proper height and styling
+- No console errors
+
+### ❌ Failed Installation:
+- Module not found errors
+- **Missing toolbar** (most common issue)
+- Non-functional formatting buttons
+- Import path errors
+- Cache corruption
+
+## Implementation Checklist
+
+### Before Installation:
+- [ ] Kill all running processes
+- [ ] Clean Next.js cache
+- [ ] Ensure all dependencies are installed
+
+### During Installation:
+- [ ] Use official editor-x installation command
+- [ ] Fix any registry import paths
+- [ ] Verify all components are created
+
+### After Installation:
+- [ ] Create RichTextEditor component with proper plugin configuration
+- [ ] Create RichTextRenderer component for displaying content
+- [ ] Test editor functionality with toolbar verification
+- [ ] Verify toolbar and formatting work
+- [ ] Test floating buttons functionality
+- [ ] Clean up test files
+- [ ] Update forms to use new editor
+
+## Command Reference
+
+### Complete Installation Command Sequence:
+```bash
+# 1. Clean and prepare
+pkill -f "next dev" && sleep 2
+rm -rf .next
+
+# 2. Install editor
+npx shadcn@latest add https://shadcn-editor.vercel.app/r/editor-x.json
+
+# 3. Fix imports (if needed)
+# Edit components/editor/editor-ui/excalidraw-modal.tsx
+
+# 4. Test installation with toolbar verification
+curl -s http://localhost:3000/test-editor-toolbar | grep -o "vertical-align-middle sticky top-0 z-10 flex gap-2 overflow-auto border-b p-1"
+
+# 5. Clean up
+rm -rf app/test-editor-toolbar
+```
+
+## Rule Enforcement
+
+### Always Apply This Rule When:
+- Users request shadcn editor installation
+- Rich text editor functionality is needed
+- Editor formatting issues are reported
+- Users ask for "floating buttons" or "toolbar"
+
+### Never Bypass This Rule For:
+- "Quick fixes" that don't follow official documentation
+- Custom implementations that don't match the official editor
+- Improvised solutions that may break in future updates
+- Using basic Editor component without plugins (will result in no toolbar)
+
+## Documentation Links
+
+- **Official shadcn Editor Documentation:** https://shadcn-editor.vercel.app/docs/installation
+- **Editor-X Demo:** https://shadcn-editor.vercel.app/blocks
+- **Installation JSON:** https://shadcn-editor.vercel.app/r/editor-x.json
+
+## Future-Proofing
+
+This rule ensures that:
+1. **Consistent Installation:** Always uses the same official method
+2. **Error Prevention:** Handles common issues proactively
+3. **Toolbar Verification:** Specifically tests for toolbar visibility
+4. **Plugin Configuration:** Properly configures all necessary plugins
+5. **Documentation:** Provides clear steps for any AI agent
+6. **Maintenance:** Easy to update when new versions are released
+
+**Remember:** Always follow the official documentation exactly. Never improvise or create custom implementations when the official solution is available. The key is ensuring the toolbar is visible and functional. 
+5. **Maintenance:** Easy to update when new versions are released
+
+**Remember:** Always follow the official documentation exactly. Never improvise or create custom implementations when the official solution is available. 

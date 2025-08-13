@@ -1,0 +1,140 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             String    @id @default("")
+  created_at     DateTime  @default(now())
+  updated_at     DateTime  @updatedAt
+  deleted_at     DateTime?
+  
+  email          String    @unique
+  password       String?
+  last_signed_in DateTime?
+  
+  profile        UserProfile?
+  roles          UserRole[]
+  posts          Post[]
+  
+  @@index([email])
+  @@index([deleted_at])
+}
+
+model UserProfile {
+  id         String    @id @default("")
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+  
+  user_id    String    @unique
+  first_name String?
+  last_name  String?
+  
+  user       User      @relation(fields: [user_id], references: [id])
+  
+  @@index([user_id])
+  @@index([deleted_at])
+}
+
+model Role {
+  id         String    @id @default("")
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+  
+  name       String    @unique
+  
+  users      UserRole[]
+  
+  @@index([name])
+  @@index([deleted_at])
+}
+
+model UserRole {
+  id         String    @id @default("")
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+  
+  user_id    String
+  role_id    String
+  
+  user       User      @relation(fields: [user_id], references: [id])
+  role       Role      @relation(fields: [role_id], references: [id])
+  
+  @@unique([user_id, role_id])
+  @@index([user_id])
+  @@index([role_id])
+  @@index([deleted_at])
+}
+
+model Post {
+  id           String         @id @default("")
+  created_at   DateTime       @default(now())
+  updated_at   DateTime       @updatedAt
+  deleted_at   DateTime?
+  
+  title        String
+  content      String
+  excerpt      String?
+  slug         String         @unique
+  status       PostStatus     @default(draft)
+  reading_time Int            @default(0)
+  published_at DateTime?
+  
+  author_id    String
+  author       User           @relation(fields: [author_id], references: [id])
+  categories   PostCategory[]
+  
+  @@index([author_id])
+  @@index([status])
+  @@index([published_at])
+  @@index([slug])
+  @@index([deleted_at])
+}
+
+model Category {
+  id          String         @id @default("")
+  created_at  DateTime       @default(now())
+  updated_at  DateTime       @updatedAt
+  deleted_at  DateTime?
+  
+  name        String         @unique
+  slug        String         @unique
+  description String?
+  
+  posts       PostCategory[]
+  
+  @@index([name])
+  @@index([slug])
+  @@index([deleted_at])
+}
+
+model PostCategory {
+  id          String   @id @default("")
+  created_at  DateTime @default(now())
+  
+  post_id     String
+  category_id String
+  
+  post        Post     @relation(fields: [post_id], references: [id])
+  category    Category @relation(fields: [category_id], references: [id])
+  
+  @@unique([post_id, category_id])
+  @@index([post_id])
+  @@index([category_id])
+}
+
+enum PostStatus {
+  draft
+  published
+}
