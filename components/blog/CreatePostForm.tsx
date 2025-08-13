@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -25,7 +25,9 @@ import {
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertTriangle, CheckCircle } from "lucide-react";
-import { RichTextEditor } from "./RichTextEditor";
+import { SimpleRichTextEditor } from "./SimpleRichTextEditor";
+import { GrowingTitleInput } from "./GrowingTitleInput";
+import { useCreatePost } from "./CreatePostContext";
 import { SerializedEditorState } from "lexical";
 
 const createPostSchema = z.object({
@@ -51,6 +53,7 @@ export function CreatePostForm({ categories }: CreatePostFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const { setIsSubmitting, setSubmitForm } = useCreatePost();
 
   console.log("CreatePostForm received categories:", categories);
 
@@ -66,6 +69,7 @@ export function CreatePostForm({ categories }: CreatePostFormProps) {
   async function onSubmit(data: CreatePostData) {
     try {
       setIsLoading(true);
+      setIsSubmitting(true);
       setError(null);
       setSuccess(null);
 
@@ -96,17 +100,18 @@ export function CreatePostForm({ categories }: CreatePostFormProps) {
       setError(err instanceof Error ? err.message : "An error occurred");
     } finally {
       setIsLoading(false);
+      setIsSubmitting(false);
     }
   }
 
+  // Expose the submit function to the context
+  useEffect(() => {
+    setSubmitForm(() => () => form.handleSubmit(onSubmit)());
+  }, [form, setSubmitForm]);
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>New Post</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
             {error && (
               <Alert variant="destructive">
                 <AlertTriangle className="h-4 w-4" />
@@ -128,9 +133,12 @@ export function CreatePostForm({ categories }: CreatePostFormProps) {
               name="title"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Title</FormLabel>
                   <FormControl>
-                    <Input placeholder="Enter post title..." {...field} />
+                    <GrowingTitleInput
+                      value={field.value}
+                      onChange={field.onChange}
+                      placeholder="Add your title here"
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -173,10 +181,9 @@ export function CreatePostForm({ categories }: CreatePostFormProps) {
               name="content"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Content</FormLabel>
                   <FormControl>
-                    <div className="min-h-[300px] border border-input rounded-md">
-                      <RichTextEditor
+                    <div className="min-h-[1.5rem] border-none">
+                      <SimpleRichTextEditor
                         value={field.value}
                         onChange={field.onChange}
                         placeholder="Write your post content..."
@@ -188,22 +195,7 @@ export function CreatePostForm({ categories }: CreatePostFormProps) {
               )}
             />
 
-            <div className="flex justify-end space-x-4">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => router.push("/blog")}
-                disabled={isLoading}
-              >
-                Cancel
-              </Button>
-              <Button type="submit" disabled={isLoading}>
-                {isLoading ? "Publishing..." : "Publish Post"}
-              </Button>
-            </div>
           </form>
         </Form>
-      </CardContent>
-    </Card>
   );
 }
