@@ -72,8 +72,7 @@ import { useState, useEffect, useCallback } from "react"
 import { nodes } from "./nodes"
 import { Plugins } from "./plugins"
 import { blockTypeToBlockName } from "@/components/editor/plugins/toolbar/block-format/block-format-data"
-import { ComponentPickerMenuPlugin } from "@/components/editor/plugins/component-picker-menu-plugin"
-import { INSERT_COMPONENT_COMMAND } from "@/components/editor/plugins/component-picker-menu-plugin"
+import { ComponentPickerMenuPlugin, triggerComponentPickerMenu } from "@/components/editor/plugins/component-picker-menu-plugin"
 
 
 const editorConfig: InitialConfigType = {
@@ -336,7 +335,8 @@ function EditorToolbar() {
         onClick={(e) => {
           e.preventDefault()
           e.stopPropagation()
-          editor.dispatchCommand(INSERT_COMPONENT_COMMAND, undefined)
+          // Trigger the component picker menu directly
+          triggerComponentPickerMenu()
           editor.focus()
         }}
         onMouseDown={(e) => {

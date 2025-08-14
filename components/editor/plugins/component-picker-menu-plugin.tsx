@@ -7,7 +7,7 @@
  * LICENSE file in the root directory of this source tree.
  *
  */
-import { JSX, useCallback, useMemo, useState } from "react"
+import { JSX, useCallback, useMemo, useState, useEffect } from "react"
 import dynamic from "next/dynamic"
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext"
 import { useBasicTypeaheadTriggerMatch } from "@lexical/react/LexicalTypeaheadMenuPlugin"
@@ -29,6 +29,17 @@ const LexicalTypeaheadMenuPlugin = dynamic(
   { ssr: false }
 )
 
+// Global state to track if menu should be shown
+let shouldShowMenu = false
+let menuTriggerCallback: (() => void) | null = null
+
+export function triggerComponentPickerMenu() {
+  shouldShowMenu = true
+  if (menuTriggerCallback) {
+    menuTriggerCallback()
+  }
+}
+
 export function ComponentPickerMenuPlugin({
   baseOptions = [],
   dynamicOptionsFn,
@@ -43,10 +54,37 @@ export function ComponentPickerMenuPlugin({
   const [editor] = useLexicalComposerContext()
   const [modal, showModal] = useEditorModal()
   const [queryString, setQueryString] = useState<string | null>(null)
+  const [forceShowMenu, setForceShowMenu] = useState(false)
 
   const checkForTriggerMatch = useBasicTypeaheadTriggerMatch("/", {
     minLength: 0,
   })
+
+  // Custom trigger function that can be called programmatically
+  const customTriggerFn = useCallback((text: string) => {
+    if (shouldShowMenu) {
+      shouldShowMenu = false
+      return {
+        leadOffset: 0,
+        matchingString: "",
+        replaceableString: "",
+        trigger: "/",
+      }
+    }
+    return checkForTriggerMatch(text)
+  }, [checkForTriggerMatch])
+
+  // Set up the callback for programmatic triggering
+  useEffect(() => {
+    menuTriggerCallback = () => {
+      setForceShowMenu(true)
+      // Reset after a short delay
+      setTimeout(() => setForceShowMenu(false), 100)
+    }
+    return () => {
+      menuTriggerCallback = null
+    }
+  }, [])
 
   const options = useMemo(() => {
     if (!queryString) {
@@ -88,7 +126,7 @@ export function ComponentPickerMenuPlugin({
       <LexicalTypeaheadMenuPlugin<ComponentPickerOption>
         onQueryChange={setQueryString}
         onSelectOption={onSelectOption}
-        triggerFn={checkForTriggerMatch}
+        triggerFn={customTriggerFn}
         options={options}
         menuRenderFn={(
           anchorElementRef,
