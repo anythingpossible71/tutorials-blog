@@ -32,9 +32,13 @@ const LexicalTypeaheadMenuPlugin = dynamic(
 // Global state to track if menu should be shown
 let shouldShowMenu = false
 let menuTriggerCallback: (() => void) | null = null
+let buttonPosition: { x: number; y: number } | null = null
 
-export function triggerComponentPickerMenu() {
+export function triggerComponentPickerMenu(x?: number, y?: number) {
   shouldShowMenu = true
+  if (x !== undefined && y !== undefined) {
+    buttonPosition = { x, y }
+  }
   if (menuTriggerCallback) {
     menuTriggerCallback()
   }
@@ -79,7 +83,10 @@ export function ComponentPickerMenuPlugin({
     menuTriggerCallback = () => {
       setForceShowMenu(true)
       // Reset after a short delay
-      setTimeout(() => setForceShowMenu(false), 100)
+      setTimeout(() => {
+        setForceShowMenu(false)
+        buttonPosition = null // Reset button position
+      }, 100)
     }
     return () => {
       menuTriggerCallback = null
@@ -132,9 +139,15 @@ export function ComponentPickerMenuPlugin({
           anchorElementRef,
           { selectedIndex, selectOptionAndCleanUp, setHighlightedIndex }
         ) => {
-          return anchorElementRef.current && options.length
+          return (anchorElementRef.current || buttonPosition) && options.length
             ? createPortal(
-                <div className="fixed w-[250px] rounded-md shadow-md">
+                <div 
+                  className="fixed w-[250px] rounded-md shadow-md bg-white border border-gray-200 z-50"
+                  style={{
+                    left: buttonPosition ? `${buttonPosition.x}px` : undefined,
+                    top: buttonPosition ? `${buttonPosition.y + 40}px` : undefined,
+                  }}
+                >
                   <Command
                     onKeyDown={(e) => {
                       if (e.key === "ArrowUp") {

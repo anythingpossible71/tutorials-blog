@@ -335,8 +335,10 @@ function EditorToolbar() {
         onClick={(e) => {
           e.preventDefault()
           e.stopPropagation()
-          // Trigger the component picker menu directly
-          triggerComponentPickerMenu()
+          // Get button position for menu positioning
+          const rect = e.currentTarget.getBoundingClientRect()
+          // Trigger the component picker menu directly with position
+          triggerComponentPickerMenu(rect.left, rect.top)
           editor.focus()
         }}
         onMouseDown={(e) => {

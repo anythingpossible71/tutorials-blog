@@ -175,7 +175,6 @@ export function Plugins({}) {
           baseOptions={[
             EmbedsPickerPlugin({ embed: "youtube-video" }),
             EmbedsPickerPlugin({ embed: "tweet" }),
-            EmbedsPickerPlugin({ embed: "figma" }),
             DividerPickerPlugin(),
             TablePickerPlugin(),
           ]}
