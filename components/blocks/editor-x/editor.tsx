@@ -10,11 +10,6 @@ import { $isLinkNode, TOGGLE_LINK_COMMAND } from "@lexical/link"
 import { INSERT_ORDERED_LIST_COMMAND, INSERT_UNORDERED_LIST_COMMAND } from "@lexical/list"
 import { $createHeadingNode, $createQuoteNode } from "@lexical/rich-text"
 import { $createParagraphNode } from "lexical"
-import { INSERT_YOUTUBE_COMMAND } from "@/components/editor/plugins/embeds/youtube-plugin"
-import { INSERT_TWEET_COMMAND } from "@/components/editor/plugins/embeds/twitter-plugin"
-import { INSERT_FIGMA_COMMAND } from "@/components/editor/plugins/embeds/figma-plugin"
-import { INSERT_TABLE_COMMAND } from "@lexical/table"
-import { INSERT_HORIZONTAL_RULE_COMMAND } from "@lexical/react/LexicalHorizontalRuleNode"
 import { $setBlocksType } from "@lexical/selection"
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext"
 import { mergeRegister, $getNearestNodeOfType } from "@lexical/utils"
@@ -52,11 +47,6 @@ import {
   IndentDecreaseIcon,
   IndentIncreaseIcon,
   PlusIcon,
-  YoutubeIcon,
-  TwitterIcon,
-  FigmaIcon,
-  MinusIcon,
-  TableIcon,
 } from "lucide-react"
 
 import { FloatingLinkContext } from "@/components/editor/context/floating-link-context"
@@ -77,17 +67,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover"
 
 import { useState, useEffect, useCallback } from "react"
 import { nodes } from "./nodes"
 import { Plugins } from "./plugins"
 import { blockTypeToBlockName } from "@/components/editor/plugins/toolbar/block-format/block-format-data"
-import { ComponentPickerMenuPlugin } from "@/components/editor/plugins/component-picker-menu-plugin"
+import { ComponentPickerMenuPlugin, useComponentPicker } from "@/components/editor/plugins/component-picker-menu-plugin"
 
 
 const editorConfig: InitialConfigType = {
@@ -102,6 +87,7 @@ const editorConfig: InitialConfigType = {
 // Toolbar component with the same buttons as floating menu
 function EditorToolbar() {
   const [editor] = useLexicalComposerContext()
+  const { showMenu } = useComponentPicker()
 
   const [isBold, setIsBold] = useState(false)
   const [isItalic, setIsItalic] = useState(false)
@@ -343,86 +329,24 @@ function EditorToolbar() {
         </SelectContent>
       </Select>
 
-      {/* Insert Menu */}
-      <Popover>
-        <PopoverTrigger asChild>
-          <Button
-            variant="outline"
-            size="sm"
-            onMouseDown={(e) => {
-              e.preventDefault()
-              e.stopPropagation()
-            }}
-            className="h-8 px-2"
-          >
-            <PlusIcon className="h-4 w-4" />
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent className="w-48 p-1" align="start">
-          <div className="space-y-1">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="w-full justify-start"
-              onClick={() => {
-                editor.dispatchCommand(INSERT_YOUTUBE_COMMAND, "")
-                editor.focus()
-              }}
-            >
-              <YoutubeIcon className="h-4 w-4 mr-2" />
-              YouTube
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="w-full justify-start"
-              onClick={() => {
-                editor.dispatchCommand(INSERT_TWEET_COMMAND, "")
-                editor.focus()
-              }}
-            >
-              <TwitterIcon className="h-4 w-4 mr-2" />
-              Twitter
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="w-full justify-start"
-              onClick={() => {
-                editor.dispatchCommand(INSERT_FIGMA_COMMAND, "")
-                editor.focus()
-              }}
-            >
-              <FigmaIcon className="h-4 w-4 mr-2" />
-              Figma
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="w-full justify-start"
-              onClick={() => {
-                editor.dispatchCommand(INSERT_HORIZONTAL_RULE_COMMAND, undefined)
-                editor.focus()
-              }}
-            >
-              <MinusIcon className="h-4 w-4 mr-2" />
-              Divider
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="w-full justify-start"
-              onClick={() => {
-                editor.dispatchCommand(INSERT_TABLE_COMMAND, undefined)
-                editor.focus()
-              }}
-            >
-              <TableIcon className="h-4 w-4 mr-2" />
-              Table
-            </Button>
-          </div>
-        </PopoverContent>
-      </Popover>
+      {/* Insert Button */}
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={(e) => {
+          e.preventDefault()
+          e.stopPropagation()
+          showMenu()
+          editor.focus()
+        }}
+        onMouseDown={(e) => {
+          e.preventDefault()
+          e.stopPropagation()
+        }}
+        className="h-8 px-2"
+      >
+        <PlusIcon className="h-4 w-4" />
+      </Button>
 
 
       <Separator orientation="vertical" className="h-6" />

@@ -7,7 +7,7 @@
  * LICENSE file in the root directory of this source tree.
  *
  */
-import { JSX, useCallback, useMemo, useState } from "react"
+import { JSX, useCallback, useMemo, useState, createContext, useContext } from "react"
 import dynamic from "next/dynamic"
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext"
 import { useBasicTypeaheadTriggerMatch } from "@lexical/react/LexicalTypeaheadMenuPlugin"
@@ -29,6 +29,21 @@ const LexicalTypeaheadMenuPlugin = dynamic(
   { ssr: false }
 )
 
+// Context to share component picker state
+const ComponentPickerContext = createContext<{
+  showMenu: () => void
+  hideMenu: () => void
+  isVisible: boolean
+} | null>(null)
+
+export const useComponentPicker = () => {
+  const context = useContext(ComponentPickerContext)
+  if (!context) {
+    throw new Error("useComponentPicker must be used within ComponentPickerMenuPlugin")
+  }
+  return context
+}
+
 export function ComponentPickerMenuPlugin({
   baseOptions = [],
   dynamicOptionsFn,
@@ -43,6 +58,7 @@ export function ComponentPickerMenuPlugin({
   const [editor] = useLexicalComposerContext()
   const [modal, showModal] = useEditorModal()
   const [queryString, setQueryString] = useState<string | null>(null)
+  const [isMenuVisible, setIsMenuVisible] = useState(false)
 
   const checkForTriggerMatch = useBasicTypeaheadTriggerMatch("/", {
     minLength: 0,
@@ -77,12 +93,29 @@ export function ComponentPickerMenuPlugin({
         selectedOption.onSelect(matchingString, editor, showModal)
         closeMenu()
       })
+      setIsMenuVisible(false)
     },
     [editor]
   )
 
+  const showMenu = useCallback(() => {
+    setIsMenuVisible(true)
+    setQueryString("")
+  }, [])
+
+  const hideMenu = useCallback(() => {
+    setIsMenuVisible(false)
+    setQueryString(null)
+  }, [])
+
+  const contextValue = useMemo(() => ({
+    showMenu,
+    hideMenu,
+    isVisible: isMenuVisible,
+  }), [showMenu, hideMenu, isMenuVisible])
+
   return (
-    <>
+    <ComponentPickerContext.Provider value={contextValue}>
       {modal}
       {/* @ts-ignore */}
       <LexicalTypeaheadMenuPlugin<ComponentPickerOption>
@@ -140,11 +173,50 @@ export function ComponentPickerMenuPlugin({
                     </CommandList>
                   </Command>
                 </div>,
-                anchorElementRef.current
+                document.body
               )
             : null
         }}
       />
-    </>
+      
+      {/* Programmatic menu trigger */}
+      {isMenuVisible && (
+        createPortal(
+          <div className="fixed inset-0 z-50" onClick={hideMenu}>
+            <div 
+              className="fixed w-[250px] rounded-md shadow-md bg-background border"
+              style={{
+                top: "50%",
+                left: "50%",
+                transform: "translate(-50%, -50%)",
+              }}
+              onClick={(e) => e.stopPropagation()}
+            >
+              <Command>
+                <CommandList>
+                  <CommandGroup>
+                    {options.map((option, index) => (
+                      <CommandItem
+                        key={option.key}
+                        value={option.title}
+                        onSelect={() => {
+                          option.onSelect("", editor, showModal)
+                          hideMenu()
+                        }}
+                        className="flex items-center gap-2"
+                      >
+                        {option.icon}
+                        {option.title}
+                      </CommandItem>
+                    ))}
+                  </CommandGroup>
+                </CommandList>
+              </Command>
+            </div>
+          </div>,
+          document.body
+        )
+      )}
+    </ComponentPickerContext.Provider>
   )
 }
