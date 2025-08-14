@@ -6,12 +6,10 @@ import {
 } from "@lexical/react/LexicalComposer"
 import { OnChangePlugin } from "@lexical/react/LexicalOnChangePlugin"
 import { EditorState, SerializedEditorState } from "lexical"
-import { $isCodeHighlightNode } from "@lexical/code"
 import { $isLinkNode, TOGGLE_LINK_COMMAND } from "@lexical/link"
 import { INSERT_ORDERED_LIST_COMMAND, INSERT_UNORDERED_LIST_COMMAND } from "@lexical/list"
 import { $createHeadingNode, $createQuoteNode } from "@lexical/rich-text"
 import { $createParagraphNode } from "lexical"
-import { $createCodeNode } from "@lexical/code"
 import { $setBlocksType } from "@lexical/selection"
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext"
 import { mergeRegister, $getNearestNodeOfType } from "@lexical/utils"
@@ -42,7 +40,6 @@ import {
   ChevronDownIcon,
   TextIcon,
   QuoteIcon,
-  CodeIcon,
   AlignLeftIcon,
   AlignCenterIcon,
   AlignRightIcon,
@@ -272,19 +269,6 @@ function EditorToolbar() {
                 case "quote":
                   $setBlocksType(selection, () => $createQuoteNode())
                   break
-                case "code":
-                  if (selection.isCollapsed()) {
-                    $setBlocksType(selection, () => $createCodeNode())
-                  } else {
-                    const textContent = selection.getTextContent()
-                    const codeNode = $createCodeNode()
-                    selection.insertNodes([codeNode])
-                    const newSelection = $getSelection()
-                    if ($isRangeSelection(newSelection)) {
-                      newSelection.insertRawText(textContent)
-                    }
-                  }
-                  break
               }
             }
           })
@@ -337,12 +321,6 @@ function EditorToolbar() {
               <div className="flex items-center gap-2">
                 <QuoteIcon className="h-4 w-4" />
                 <span>Quote</span>
-              </div>
-            </SelectItem>
-            <SelectItem value="code">
-              <div className="flex items-center gap-2">
-                <CodeIcon className="h-4 w-4" />
-                <span>Code Block</span>
               </div>
             </SelectItem>
           </SelectGroup>
