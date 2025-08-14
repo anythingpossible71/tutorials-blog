@@ -7,7 +7,7 @@
  * LICENSE file in the root directory of this source tree.
  *
  */
-import { JSX, useCallback, useMemo, useState, useEffect } from "react"
+import { JSX, useCallback, useMemo, useState } from "react"
 import dynamic from "next/dynamic"
 import { useLexicalComposerContext } from "@lexical/react/LexicalComposerContext"
 import { useBasicTypeaheadTriggerMatch } from "@lexical/react/LexicalTypeaheadMenuPlugin"
@@ -29,21 +29,6 @@ const LexicalTypeaheadMenuPlugin = dynamic(
   { ssr: false }
 )
 
-// Global state to track if menu should be shown
-let shouldShowMenu = false
-let menuTriggerCallback: (() => void) | null = null
-let buttonPosition: { x: number; y: number } | null = null
-
-export function triggerComponentPickerMenu(x?: number, y?: number) {
-  shouldShowMenu = true
-  if (x !== undefined && y !== undefined) {
-    buttonPosition = { x, y }
-  }
-  if (menuTriggerCallback) {
-    menuTriggerCallback()
-  }
-}
-
 export function ComponentPickerMenuPlugin({
   baseOptions = [],
   dynamicOptionsFn,
@@ -58,40 +43,10 @@ export function ComponentPickerMenuPlugin({
   const [editor] = useLexicalComposerContext()
   const [modal, showModal] = useEditorModal()
   const [queryString, setQueryString] = useState<string | null>(null)
-  const [forceShowMenu, setForceShowMenu] = useState(false)
 
   const checkForTriggerMatch = useBasicTypeaheadTriggerMatch("/", {
     minLength: 0,
   })
-
-  // Custom trigger function that can be called programmatically
-  const customTriggerFn = useCallback((text: string) => {
-    if (shouldShowMenu) {
-      shouldShowMenu = false
-      return {
-        leadOffset: 0,
-        matchingString: "",
-        replaceableString: "",
-        trigger: "/",
-      }
-    }
-    return checkForTriggerMatch(text)
-  }, [checkForTriggerMatch])
-
-  // Set up the callback for programmatic triggering
-  useEffect(() => {
-    menuTriggerCallback = () => {
-      setForceShowMenu(true)
-      // Reset after a short delay
-      setTimeout(() => {
-        setForceShowMenu(false)
-        buttonPosition = null // Reset button position
-      }, 100)
-    }
-    return () => {
-      menuTriggerCallback = null
-    }
-  }, [])
 
   const options = useMemo(() => {
     if (!queryString) {
@@ -133,21 +88,15 @@ export function ComponentPickerMenuPlugin({
       <LexicalTypeaheadMenuPlugin<ComponentPickerOption>
         onQueryChange={setQueryString}
         onSelectOption={onSelectOption}
-        triggerFn={customTriggerFn}
+        triggerFn={checkForTriggerMatch}
         options={options}
         menuRenderFn={(
           anchorElementRef,
           { selectedIndex, selectOptionAndCleanUp, setHighlightedIndex }
         ) => {
-          return (anchorElementRef.current || buttonPosition) && options.length
+          return anchorElementRef.current && options.length
             ? createPortal(
-                <div 
-                  className="fixed w-[250px] rounded-md shadow-md bg-white border border-gray-200 z-50"
-                  style={{
-                    left: buttonPosition ? `${buttonPosition.x}px` : undefined,
-                    top: buttonPosition ? `${buttonPosition.y + 40}px` : undefined,
-                  }}
-                >
+                <div className="fixed w-[250px] rounded-md shadow-md">
                   <Command
                     onKeyDown={(e) => {
                       if (e.key === "ArrowUp") {
