@@ -24,6 +24,7 @@ model User {
   profile        UserProfile?
   roles          UserRole[]
   posts          Post[]
+  media          Media[]
   
   @@index([email])
   @@index([deleted_at])
@@ -94,6 +95,7 @@ model Post {
   author_id    String
   author       User           @relation(fields: [author_id], references: [id])
   categories   PostCategory[]
+  media        PostMedia[]
   
   @@index([author_id])
   @@index([status])
@@ -132,6 +134,45 @@ model PostCategory {
   @@unique([post_id, category_id])
   @@index([post_id])
   @@index([category_id])
+}
+
+model Media {
+  id          String    @id @default("")
+  created_at  DateTime  @default(now())
+  updated_at  DateTime  @updatedAt
+  deleted_at  DateTime?
+  
+  filename    String    // Original filename
+  path        String    // Storage path
+  url         String    // Public URL
+  mime_type   String    // MIME type
+  size        Int       // File size in bytes
+  width       Int?      // Image width (if image)
+  height      Int?      // Image height (if image)
+  alt_text    String?   // Alt text for accessibility
+  
+  uploaded_by String    // User ID who uploaded
+  user        User      @relation(fields: [uploaded_by], references: [id])
+  
+  posts       PostMedia[] // Many-to-many with posts
+  
+  @@index([uploaded_by])
+  @@index([deleted_at])
+}
+
+model PostMedia {
+  id        String   @id @default("")
+  created_at DateTime @default(now())
+  
+  post_id   String
+  media_id  String
+  
+  post      Post     @relation(fields: [post_id], references: [id])
+  media     Media    @relation(fields: [media_id], references: [id])
+  
+  @@unique([post_id, media_id])
+  @@index([post_id])
+  @@index([media_id])
 }
 
 enum PostStatus {

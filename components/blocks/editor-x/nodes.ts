@@ -24,8 +24,8 @@ import { YouTubeNode } from "@/components/editor/nodes/embeds/youtube-node"
 import { EmojiNode } from "@/components/editor/nodes/emoji-node"
 import { EquationNode } from "@/components/editor/nodes/equation-node"
 import { ExcalidrawNode } from "@/components/editor/nodes/excalidraw-node"
-import { ImageNode } from "@/components/editor/nodes/image-node"
-import { InlineImageNode } from "@/components/editor/nodes/inline-image-node"
+// import { ImageNode } from "@/components/editor/nodes/image-node"
+// import { InlineImageNode } from "@/components/editor/nodes/inline-image-node"
 import { KeywordNode } from "@/components/editor/nodes/keyword-node"
 import { LayoutContainerNode } from "@/components/editor/nodes/layout-container-node"
 import { LayoutItemNode } from "@/components/editor/nodes/layout-item-node"
@@ -52,8 +52,8 @@ export const nodes: ReadonlyArray<Klass<LexicalNode> | LexicalNodeReplacement> =
     HorizontalRuleNode,
     MentionNode,
     PageBreakNode,
-    ImageNode,
-    InlineImageNode,
+    // ImageNode,
+    // InlineImageNode,
     EmojiNode,
     KeywordNode,
     ExcalidrawNode,

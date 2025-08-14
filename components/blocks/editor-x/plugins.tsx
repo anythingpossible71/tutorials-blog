@@ -40,8 +40,8 @@ import { EquationsPlugin } from "@/components/editor/plugins/equations-plugin"
 import { ExcalidrawPlugin } from "@/components/editor/plugins/excalidraw-plugin"
 import { FloatingLinkEditorPlugin } from "@/components/editor/plugins/floating-link-editor-plugin"
 import { FloatingTextFormatToolbarPlugin } from "@/components/editor/plugins/floating-text-format-plugin"
-import { ImagesPlugin } from "@/components/editor/plugins/images-plugin"
-import { InlineImagePlugin } from "@/components/editor/plugins/inline-image-plugin"
+// import { ImagesPlugin } from "@/components/editor/plugins/images-plugin"
+// import { InlineImagePlugin } from "@/components/editor/plugins/inline-image-plugin"
 import { KeywordsPlugin } from "@/components/editor/plugins/keywords-plugin"
 import { LayoutPlugin } from "@/components/editor/plugins/layout-plugin"
 import { LinkPlugin } from "@/components/editor/plugins/link-plugin"
@@ -59,7 +59,7 @@ import { EmbedsPickerPlugin } from "@/components/editor/plugins/picker/embeds-pi
 import { EquationPickerPlugin } from "@/components/editor/plugins/picker/equation-picker-plugin"
 import { ExcalidrawPickerPlugin } from "@/components/editor/plugins/picker/excalidraw-picker-plugin"
 import { HeadingPickerPlugin } from "@/components/editor/plugins/picker/heading-picker-plugin"
-import { ImagePickerPlugin } from "@/components/editor/plugins/picker/image-picker-plugin"
+// import { ImagePickerPlugin } from "@/components/editor/plugins/picker/image-picker-plugin"
 import { NumberedListPickerPlugin } from "@/components/editor/plugins/picker/numbered-list-picker-plugin"
 import { PageBreakPickerPlugin } from "@/components/editor/plugins/picker/page-break-picker-plugin"
 import { ParagraphPickerPlugin } from "@/components/editor/plugins/picker/paragraph-picker-plugin"
@@ -79,7 +79,7 @@ import { TableHoverActionsPlugin } from "@/components/editor/plugins/table-hover
 import { EMOJI } from "@/components/editor/transformers/markdown-emoji-transformer"
 import { EQUATION } from "@/components/editor/transformers/markdown-equation-transformer"
 import { HR } from "@/components/editor/transformers/markdown-hr-transformer"
-import { IMAGE } from "@/components/editor/transformers/markdown-image-transformer"
+// import { IMAGE } from "@/components/editor/transformers/markdown-image-transformer"
 import { TABLE } from "@/components/editor/transformers/markdown-table-transformer"
 import { TWEET } from "@/components/editor/transformers/markdown-tweet-transformer"
 
@@ -128,8 +128,8 @@ export function Plugins({}) {
         <DraggableBlockPlugin anchorElem={floatingAnchorElem} />
         <KeywordsPlugin />
         <EmojisPlugin />
-        <ImagesPlugin />
-        <InlineImagePlugin />
+        {/* <ImagesPlugin />
+        <InlineImagePlugin /> */}
         <ExcalidrawPlugin />
         <TableCellResizerPlugin />
         <TableHoverActionsPlugin anchorElem={floatingAnchorElem} />
@@ -154,7 +154,7 @@ export function Plugins({}) {
           transformers={[
             TABLE,
             HR,
-            IMAGE,
+            // IMAGE,
             EMOJI,
             EQUATION,
             TWEET,
@@ -191,7 +191,7 @@ export function Plugins({}) {
             EmbedsPickerPlugin({ embed: "tweet" }),
             EmbedsPickerPlugin({ embed: "youtube-video" }),
             EquationPickerPlugin(),
-            ImagePickerPlugin(),
+            // ImagePickerPlugin(),
             CollapsiblePickerPlugin(),
             ColumnsLayoutPickerPlugin(),
             AlignmentPickerPlugin({ alignment: "left" }),
