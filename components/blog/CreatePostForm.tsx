@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -10,7 +10,6 @@ import {
   FormControl,
   FormField,
   FormItem,
-  FormLabel,
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
@@ -25,9 +24,7 @@ import {
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { AlertTriangle, CheckCircle } from "lucide-react";
-import { SimpleRichTextEditor } from "./SimpleRichTextEditor";
-import { GrowingTitleInput } from "./GrowingTitleInput";
-import { useCreatePost } from "./CreatePostContext";
+import { RichTextEditor } from "./RichTextEditor";
 import { SerializedEditorState } from "lexical";
 
 const createPostSchema = z.object({
@@ -53,7 +50,6 @@ export function CreatePostForm({ categories }: CreatePostFormProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const { setIsSubmitting, setSubmitForm } = useCreatePost();
 
   console.log("CreatePostForm received categories:", categories);
 
@@ -69,7 +65,6 @@ export function CreatePostForm({ categories }: CreatePostFormProps) {
   async function onSubmit(data: CreatePostData) {
     try {
       setIsLoading(true);
-      setIsSubmitting(true);
       setError(null);
       setSuccess(null);
 
@@ -100,14 +95,8 @@ export function CreatePostForm({ categories }: CreatePostFormProps) {
       setError(err instanceof Error ? err.message : "An error occurred");
     } finally {
       setIsLoading(false);
-      setIsSubmitting(false);
     }
   }
-
-  // Expose the submit function to the context
-  useEffect(() => {
-    setSubmitForm(() => () => form.handleSubmit(onSubmit)());
-  }, [form, setSubmitForm]);
 
   return (
     <Form {...form}>
@@ -134,11 +123,7 @@ export function CreatePostForm({ categories }: CreatePostFormProps) {
               render={({ field }) => (
                 <FormItem>
                   <FormControl>
-                    <GrowingTitleInput
-                      value={field.value}
-                      onChange={field.onChange}
-                      placeholder="Add your title here"
-                    />
+                    <Input placeholder="Enter post title..." {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -150,7 +135,6 @@ export function CreatePostForm({ categories }: CreatePostFormProps) {
               name="categoryId"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Category</FormLabel>
                   <Select onValueChange={field.onChange} defaultValue={field.value}>
                     <FormControl>
                       <SelectTrigger>
@@ -182,8 +166,8 @@ export function CreatePostForm({ categories }: CreatePostFormProps) {
               render={({ field }) => (
                 <FormItem>
                   <FormControl>
-                    <div className="min-h-[1.5rem] border-none">
-                      <SimpleRichTextEditor
+                    <div className="min-h-[300px]">
+                      <RichTextEditor
                         value={field.value}
                         onChange={field.onChange}
                         placeholder="Write your post content..."
@@ -195,6 +179,9 @@ export function CreatePostForm({ categories }: CreatePostFormProps) {
               )}
             />
 
+            <Button type="submit" disabled={isLoading} className="hidden">
+              {isLoading ? "Publishing..." : "Publish Post"}
+            </Button>
           </form>
         </Form>
   );
