@@ -173,31 +173,11 @@ export function Plugins({}) {
 
         <ComponentPickerMenuPlugin
           baseOptions={[
-            ParagraphPickerPlugin(),
-            HeadingPickerPlugin({ n: 1 }),
-            HeadingPickerPlugin({ n: 2 }),
-            HeadingPickerPlugin({ n: 3 }),
-            TablePickerPlugin(),
-            CheckListPickerPlugin(),
-            NumberedListPickerPlugin(),
-            BulletedListPickerPlugin(),
-            QuotePickerPlugin(),
-            CodePickerPlugin(),
-            DividerPickerPlugin(),
-            PageBreakPickerPlugin(),
-            ExcalidrawPickerPlugin(),
-            PollPickerPlugin(),
-            EmbedsPickerPlugin({ embed: "figma" }),
-            EmbedsPickerPlugin({ embed: "tweet" }),
             EmbedsPickerPlugin({ embed: "youtube-video" }),
-            EquationPickerPlugin(),
-            // ImagePickerPlugin(),
-            CollapsiblePickerPlugin(),
-            ColumnsLayoutPickerPlugin(),
-            AlignmentPickerPlugin({ alignment: "left" }),
-            AlignmentPickerPlugin({ alignment: "center" }),
-            AlignmentPickerPlugin({ alignment: "right" }),
-            AlignmentPickerPlugin({ alignment: "justify" }),
+            EmbedsPickerPlugin({ embed: "tweet" }),
+            EmbedsPickerPlugin({ embed: "figma" }),
+            DividerPickerPlugin(),
+            TablePickerPlugin(),
           ]}
           dynamicOptionsFn={DynamicTablePickerPlugin}
         />

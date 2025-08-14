@@ -46,7 +46,7 @@ import {
   AlignJustifyIcon,
   IndentDecreaseIcon,
   IndentIncreaseIcon,
-
+  PlusIcon,
 } from "lucide-react"
 
 import { FloatingLinkContext } from "@/components/editor/context/floating-link-context"
@@ -72,6 +72,8 @@ import { useState, useEffect, useCallback } from "react"
 import { nodes } from "./nodes"
 import { Plugins } from "./plugins"
 import { blockTypeToBlockName } from "@/components/editor/plugins/toolbar/block-format/block-format-data"
+import { ComponentPickerMenuPlugin } from "@/components/editor/plugins/component-picker-menu-plugin"
+import { INSERT_COMPONENT_COMMAND } from "@/components/editor/plugins/component-picker-menu-plugin"
 
 
 const editorConfig: InitialConfigType = {
@@ -326,6 +328,25 @@ function EditorToolbar() {
           </SelectGroup>
         </SelectContent>
       </Select>
+
+      {/* Insert Button */}
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={(e) => {
+          e.preventDefault()
+          e.stopPropagation()
+          editor.dispatchCommand(INSERT_COMPONENT_COMMAND, undefined)
+          editor.focus()
+        }}
+        onMouseDown={(e) => {
+          e.preventDefault()
+          e.stopPropagation()
+        }}
+        className="h-8 px-2"
+      >
+        <PlusIcon className="h-4 w-4" />
+      </Button>
 
 
       <Separator orientation="vertical" className="h-6" />
