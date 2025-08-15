@@ -24,25 +24,27 @@ import {
 
 import { ComponentPickerOption } from "./picker/component-picker-option"
 
-const LexicalTypeaheadMenuPlugin = dynamic(
-  () => import("./default/lexical-typeahead-menu-plugin"),
-  { ssr: false }
-)
+// Context for sharing component picker functionality
+interface ComponentPickerContextType {
+  showComponentPicker: (anchorElement: HTMLElement) => void
+  hideComponentPicker: () => void
+  isComponentPickerVisible: boolean
+}
 
-// Context to share component picker state
-const ComponentPickerContext = createContext<{
-  showMenu: () => void
-  hideMenu: () => void
-  isVisible: boolean
-} | null>(null)
+const ComponentPickerContext = createContext<ComponentPickerContextType | null>(null)
 
-export const useComponentPicker = () => {
+export function useComponentPicker() {
   const context = useContext(ComponentPickerContext)
   if (!context) {
     throw new Error("useComponentPicker must be used within ComponentPickerMenuPlugin")
   }
   return context
 }
+
+const LexicalTypeaheadMenuPlugin = dynamic(
+  () => import("./default/lexical-typeahead-menu-plugin"),
+  { ssr: false }
+)
 
 export function ComponentPickerMenuPlugin({
   baseOptions = [],
@@ -58,7 +60,8 @@ export function ComponentPickerMenuPlugin({
   const [editor] = useLexicalComposerContext()
   const [modal, showModal] = useEditorModal()
   const [queryString, setQueryString] = useState<string | null>(null)
-  const [isMenuVisible, setIsMenuVisible] = useState(false)
+  const [manualAnchorElement, setManualAnchorElement] = useState<HTMLElement | null>(null)
+  const [isManualTrigger, setIsManualTrigger] = useState(false)
 
   const checkForTriggerMatch = useBasicTypeaheadTriggerMatch("/", {
     minLength: 0,
@@ -81,6 +84,18 @@ export function ComponentPickerMenuPlugin({
     ]
   }, [editor, queryString, showModal])
 
+  const showComponentPicker = useCallback((anchorElement: HTMLElement) => {
+    setManualAnchorElement(anchorElement)
+    setIsManualTrigger(true)
+    setQueryString("")
+  }, [])
+
+  const hideComponentPicker = useCallback(() => {
+    setManualAnchorElement(null)
+    setIsManualTrigger(false)
+    setQueryString(null)
+  }, [])
+
   const onSelectOption = useCallback(
     (
       selectedOption: ComponentPickerOption,
@@ -93,26 +108,19 @@ export function ComponentPickerMenuPlugin({
         selectedOption.onSelect(matchingString, editor, showModal)
         closeMenu()
       })
-      setIsMenuVisible(false)
+      // Hide manual picker if it was manually triggered
+      if (isManualTrigger) {
+        hideComponentPicker()
+      }
     },
-    [editor]
+    [editor, isManualTrigger, hideComponentPicker]
   )
 
-  const showMenu = useCallback(() => {
-    setIsMenuVisible(true)
-    setQueryString("")
-  }, [])
-
-  const hideMenu = useCallback(() => {
-    setIsMenuVisible(false)
-    setQueryString(null)
-  }, [])
-
   const contextValue = useMemo(() => ({
-    showMenu,
-    hideMenu,
-    isVisible: isMenuVisible,
-  }), [showMenu, hideMenu, isMenuVisible])
+    showComponentPicker,
+    hideComponentPicker,
+    isComponentPickerVisible: isManualTrigger,
+  }), [showComponentPicker, hideComponentPicker, isManualTrigger])
 
   return (
     <ComponentPickerContext.Provider value={contextValue}>
@@ -127,7 +135,11 @@ export function ComponentPickerMenuPlugin({
           anchorElementRef,
           { selectedIndex, selectOptionAndCleanUp, setHighlightedIndex }
         ) => {
-          return anchorElementRef.current && options.length
+          const shouldShowMenu = (anchorElementRef.current && options.length) || 
+                                (isManualTrigger && manualAnchorElement && options.length)
+          const anchorElement = isManualTrigger ? manualAnchorElement : anchorElementRef.current
+          
+          return shouldShowMenu && anchorElement
             ? createPortal(
                 <div className="fixed w-[250px] rounded-md shadow-md">
                   <Command
@@ -147,6 +159,11 @@ export function ComponentPickerMenuPlugin({
                             ? (selectedIndex + 1) % options.length
                             : 0
                         )
+                      } else if (e.key === "Escape") {
+                        e.preventDefault()
+                        if (isManualTrigger) {
+                          hideComponentPicker()
+                        }
                       }
                     }}
                   >
@@ -173,50 +190,11 @@ export function ComponentPickerMenuPlugin({
                     </CommandList>
                   </Command>
                 </div>,
-                document.body
+                anchorElement
               )
             : null
         }}
       />
-      
-      {/* Programmatic menu trigger */}
-      {isMenuVisible && (
-        createPortal(
-          <div className="fixed inset-0 z-50" onClick={hideMenu}>
-            <div 
-              className="fixed w-[250px] rounded-md shadow-md bg-background border"
-              style={{
-                top: "50%",
-                left: "50%",
-                transform: "translate(-50%, -50%)",
-              }}
-              onClick={(e) => e.stopPropagation()}
-            >
-              <Command>
-                <CommandList>
-                  <CommandGroup>
-                    {options.map((option, index) => (
-                      <CommandItem
-                        key={option.key}
-                        value={option.title}
-                        onSelect={() => {
-                          option.onSelect("", editor, showModal)
-                          hideMenu()
-                        }}
-                        className="flex items-center gap-2"
-                      >
-                        {option.icon}
-                        {option.title}
-                      </CommandItem>
-                    ))}
-                  </CommandGroup>
-                </CommandList>
-              </Command>
-            </div>
-          </div>,
-          document.body
-        )
-      )}
     </ComponentPickerContext.Provider>
   )
 }
