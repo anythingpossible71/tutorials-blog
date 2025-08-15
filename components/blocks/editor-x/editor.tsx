@@ -87,7 +87,15 @@ const editorConfig: InitialConfigType = {
 // Toolbar component with the same buttons as floating menu
 function EditorToolbar() {
   const [editor] = useLexicalComposerContext()
-  const { showMenu } = useComponentPicker()
+  
+  // Try to get the component picker context, but don't fail if it's not available
+  let showMenu: (() => void) | null = null
+  try {
+    const componentPicker = useComponentPicker()
+    showMenu = componentPicker.showMenu
+  } catch (error) {
+    // Context not available, showMenu will remain null
+  }
 
   const [isBold, setIsBold] = useState(false)
   const [isItalic, setIsItalic] = useState(false)
@@ -336,7 +344,17 @@ function EditorToolbar() {
         onClick={(e) => {
           e.preventDefault()
           e.stopPropagation()
-          showMenu()
+          if (showMenu) {
+            showMenu()
+          } else {
+            // Fallback: simulate typing "/" to trigger the component picker
+            editor.update(() => {
+              const selection = $getSelection()
+              if ($isRangeSelection(selection)) {
+                selection.insertText("/")
+              }
+            })
+          }
           editor.focus()
         }}
         onMouseDown={(e) => {
