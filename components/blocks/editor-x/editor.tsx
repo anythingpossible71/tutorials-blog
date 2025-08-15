@@ -72,7 +72,7 @@ import { useState, useEffect, useCallback } from "react"
 import { nodes } from "./nodes"
 import { Plugins } from "./plugins"
 import { blockTypeToBlockName } from "@/components/editor/plugins/toolbar/block-format/block-format-data"
-import { ComponentPickerMenuPlugin } from "@/components/editor/plugins/component-picker-menu-plugin"
+import { ComponentPickerMenuPlugin, useComponentPicker } from "@/components/editor/plugins/component-picker-menu-plugin"
 
 
 const editorConfig: InitialConfigType = {
@@ -87,6 +87,15 @@ const editorConfig: InitialConfigType = {
 // Toolbar component with the same buttons as floating menu
 function EditorToolbar() {
   const [editor] = useLexicalComposerContext()
+  
+  // Try to get the component picker context, but don't fail if it's not available
+  let showMenu: (() => void) | null = null
+  try {
+    const componentPicker = useComponentPicker()
+    showMenu = componentPicker.showMenu
+  } catch {
+    // Context not available, will use fallback
+  }
 
   const [isBold, setIsBold] = useState(false)
   const [isItalic, setIsItalic] = useState(false)
@@ -335,13 +344,17 @@ function EditorToolbar() {
         onClick={(e) => {
           e.preventDefault()
           e.stopPropagation()
-          // Simulate typing "/" to trigger the component picker
-          editor.update(() => {
-            const selection = $getSelection()
-            if ($isRangeSelection(selection)) {
-              selection.insertText("/")
-            }
-          })
+          if (showMenu) {
+            showMenu()
+          } else {
+            // Fallback: simulate typing "/" to trigger the component picker
+            editor.update(() => {
+              const selection = $getSelection()
+              if ($isRangeSelection(selection)) {
+                selection.insertText("/")
+              }
+            })
+          }
           editor.focus()
         }}
         onMouseDown={(e) => {
